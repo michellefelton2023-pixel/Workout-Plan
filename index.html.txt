@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracker</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        :root { --green: #0F6E56; --mint: #E1F5EE; --blue: #0056b3; --gold: #FFD700; --orange: #FF8C00; --dark: #2C2C2A; --bg: #F8F9FA; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--dark); font-size: 14px; }
+        header { background: var(--green); color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #1D9E75; }
+        .main-layout { display: grid; grid-template-columns: 400px 1fr; min-height: calc(100vh - 70px); }
+        .panel { padding: 20px; overflow-y: auto; max-height: calc(100vh - 70px); }
+        .entry { background: white; border-right: 1px solid #DDD; }
+        .dashboard { background: white; padding: 20px; border-radius: 12px; border: 1px solid #DDD; margin-bottom: 20px; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .box { background: var(--mint); padding: 12px; border-radius: 8px; border-left: 4px solid var(--green); text-align: center; }
+        .num { font-size: 1.2rem; font-weight: 800; color: var(--green); }
+        .lab { font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: #555; }
+        .bar-bg { background: #EEE; height: 12px; border-radius: 10px; margin-top: 8px; overflow: hidden; }
+        .bar-fill { background: var(--orange); height: 100%; width: 0%; transition: 0.5s; }
+        .form-section { margin-bottom: 15px; }
+        label { font-size: 11px; font-weight: 700; color: var(--green); display: block; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #DDD; border-radius: 6px; margin-bottom: 10px; font-family: inherit; }
+        .btn-save { background: var(--green); color: white; border: none; padding: 15px; border-radius: 6px; width: 100%; font-weight: 700; cursor: pointer; }
+        .log-card { background: white; border: 1px solid #DDD; border-left: 5px solid var(--green); padding: 15px; margin-bottom: 10px; position: relative; border-radius: 8px; }
+        .del { position: absolute; top: 10px; right: 10px; background: #FF4D4D; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+        .chart-h { height: 200px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>?? Fitness Tracker</h1>
+    <div style="font-size: 0.8rem; opacity: 0.8;">Weekly Goal: 3,500 kcal</div>
+</header>
+
+<div class="main-layout">
+    <div class="panel entry">
+        <div class="form-section">
+            <label>ACTIVITY TYPE</label>
+            <select id="type">
+                <option value="Hybrid">Gym / Hybrid</option>
+                <option value="Running">Running</option>
+                <option value="Steps">Daily Steps / Work</option>
+                <option value="Strength">Strength Only</option>
+                <option value="Cardio">Other Cardio</option>
+            </select>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div><label>DATE</label><input type="date" id="date"></div>
+                <div><label>TOTAL MINS</label><input type="number" id="dur" placeholder="60"></div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div><label>CARDIO MINS</label><input type="number" id="c_min" placeholder="20"></div>
+                <div><label>WATCH BURN ??</label><input type="number" id="cals" placeholder="300"></div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div><label>MILES ??</label><input type="number" step="0.1" id="dist" placeholder="0.0"></div>
+                <div><label>STEPS ??</label><input type="number" id="steps" placeholder="8000"></div>
+            </div>
+
+            <label>NOTES</label>
+            <textarea id="note" placeholder="BJJ, Bench, Route..."></textarea>
+            
+            <button class="btn-save" onclick="saveLog()">SAVE WORKOUT</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="dashboard">
+            <div class="stats">
+                <div class="box"><div class="num" id="w_str">0</div><div class="lab">Weekly Str Min</div></div>
+                <div class="box"><div class="num" id="w_car">0</div><div class="lab">Weekly Car Min</div></div>
+                <div class="box" style="grid-column: span 2;"><div class="num" id="w_cal">0</div><div class="lab">Weekly Deficit ??</div></div>
+            </div>
+            <div style="font-size:12px; font-weight:700;">WEEKLY PROGRESS <span id="p_txt" style="float:right">0%</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="p_bar"></div></div>
+            <div class="chart-h"><canvas id="ch1"></canvas></div>
+            <div class="chart-h"><canvas id="ch2"></canvas></div>
+        </div>
+        <div id="logs"></div>
+    </div>
+</div>
+
+<script>
+    let logs = JSON.parse(localStorage.getItem('athlete_v2')) || [];
+    let ch1 = null, ch2 = null;
+    document.getElementById('date').valueAsDate = new Date();
+
+    function saveLog() {
+        const type = document.getElementById('type').value;
+        const total = Number(document.getElementById('dur').value) || 0;
+        let cardio = Number(document.getElementById('c_min').value) || 0;
+        const watch = Number(document.getElementById('cals').value) || 0;
+        
+        if (["Running", "Steps", "Cardio"].includes(type)) cardio = total;
+        const bonus = ["Hybrid", "Strength"].includes(type) ? 200 : 0;
+
+        logs.push({
+            id: Date.now(),
+            date: document.getElementById('date').value,
+            type: type,
+            str: total - cardio,
+            car: cardio,
+            cal: watch + bonus,
+            mi: Number(document.getElementById('dist').value) || 0,
+            st: Number(document.getElementById('steps').value) || 0
+        });
+
+        localStorage.setItem('athlete_v2', JSON.stringify(logs));
+        update();
+    }
+
+    function update() {
+        const logDiv = document.getElementById('logs');
+        let sS = 0, sC = 0, sCal = 0;
+        const now = new Date();
+        const start = new Date(now.setDate(now.getDate() - now.getDay() + 1)).setHours(0,0,0,0);
+
+        logs.sort((a,b) => new Date(b.date) - new Date(a.date));
+        
+        logs.forEach(l => {
+            if (new Date(l.date) >= start) { sS += l.str; sC += l.car; sCal += l.cal; }
+        });
+
+        document.getElementById('w_str').innerText = sS;
+        document.getElementById('w_car').innerText = sC;
+        document.getElementById('w_cal').innerText = sCal;
+        document.getElementById('p_bar').style.width = Math.min((sCal/3500)*100, 100) + '%';
+        document.getElementById('p_txt').innerText = Math.round((sCal/3500)*100) + '%';
+
+        logDiv.innerHTML = logs.map(l => `
+            <div class="log-card">
+                <button class="del" onclick="delLog(${l.id})">X</button>
+                <strong>${l.date} - ${l.type}</strong><br>
+                ?? ${l.cal} kcal | ?? ${l.str}m | ?? ${l.car}m | ?? ${l.mi}mi
+            </div>
+        `).join('');
+        
+        drawCharts();
+    }
+
+    function drawCharts() {
+        const data = [...logs].reverse().slice(-7);
+        const labs = data.map(l => l.date.slice(5));
+
+        if (ch1) ch1.destroy();
+        ch1 = new Chart(document.getElementById('ch1'), {
+            type: 'bar',
+            data: { labels: labs, datasets: [
+                { label: 'Str', data: data.map(l => l.str), backgroundColor: '#0056b3' },
+                { label: 'Car', data: data.map(l => l.car), backgroundColor: '#FFD700' }
+            ]},
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: {stacked: true}, y: {stacked: true}}}
+        });
+
+        if (ch2) ch2.destroy();
+        ch2 = new Chart(document.getElementById('ch2'), {
+            type: 'line',
+            data: { labels: labs, datasets: [{ label: 'Miles', data: data.map(l => l.mi), borderColor: '#FF8C00', fill: true, backgroundColor: 'rgba(255,140,0,0.1)' }]},
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    function delLog(id) { logs = logs.filter(l => l.id !== id); localStorage.setItem('athlete_v2', JSON.stringify(logs)); update(); }
+    update();
+</script>
+</body>
+</html>
