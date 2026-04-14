@@ -150,14 +150,21 @@
         const data = [...logs].reverse().slice(-7);
         const labs = data.map(l => l.date.slice(5));
 
-        if (ch1) ch1.destroy();
+       if (ch1) ch1.destroy();
         ch1 = new Chart(document.getElementById('ch1'), {
             type: 'bar',
             data: { labels: labs, datasets: [
                 { label: 'Str', data: data.map(l => l.str), backgroundColor: '#0056b3' },
                 { label: 'Car', data: data.map(l => l.car), backgroundColor: '#FFD700' }
             ]},
-            options: { responsive: true, maintainAspectRatio: false, scales: { x: {stacked: true}, y: {stacked: true}}}
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                scales: { 
+                    x: { stacked: false }, // Changed to false
+                    y: { stacked: false }  // Changed to false
+                }
+            }
         });
 
         if (ch2) ch2.destroy();
