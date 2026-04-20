@@ -2,85 +2,91 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fitness Tracker</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-        :root { --green: #0F6E56; --mint: #E1F5EE; --blue: #0056b3; --gold: #FFD700; --orange: #FF8C00; --dark: #2C2C2A; --bg: #F8F9FA; }
+        :root { --green: #0F6E56; --mint: #E1F5EE; --orange: #FF8C00; --bg: #F8F9FA; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--dark); font-size: 14px; }
-        header { background: var(--green); color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #1D9E75; }
-        .main-layout { display: grid; grid-template-columns: 400px 1fr; min-height: calc(100vh - 70px); }
-        .panel { padding: 20px; overflow-y: auto; max-height: calc(100vh - 70px); }
-        .entry { background: white; border-right: 1px solid #DDD; }
-        .dashboard { background: white; padding: 20px; border-radius: 12px; border: 1px solid #DDD; margin-bottom: 20px; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #2C2C2A; overflow-x: hidden; }
+        header { background: var(--green); color: white; padding: 15px; border-bottom: 4px solid #1D9E75; position: sticky; top: 0; z-index: 100; }
+        
+        .main-layout { display: flex; flex-direction: column; }
+        .panel { padding: 15px; width: 100%; }
+        
+        @media (min-width: 850px) {
+            .main-layout { flex-direction: row; height: calc(100vh - 70px); }
+            .entry { width: 400px; border-right: 1px solid #DDD; overflow-y: auto; }
+            .dash-panel { flex: 1; overflow-y: auto; }
+        }
+
+        .dashboard { background: white; padding: 15px; border-radius: 12px; border: 1px solid #DDD; margin-bottom: 20px; }
         .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .box { background: var(--mint); padding: 12px; border-radius: 8px; border-left: 4px solid var(--green); text-align: center; }
-        .num { font-size: 1.2rem; font-weight: 800; color: var(--green); }
-        .lab { font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: #555; }
-        .bar-bg { background: #EEE; height: 12px; border-radius: 10px; margin-top: 8px; overflow: hidden; }
+        .num { font-size: 1.3rem; font-weight: 800; color: var(--green); }
+        .lab { font-size: 0.65rem; text-transform: uppercase; font-weight: 700; color: #555; }
+        
+        .bar-bg { background: #EEE; height: 14px; border-radius: 10px; margin: 8px 0; overflow: hidden; }
         .bar-fill { background: var(--orange); height: 100%; width: 0%; transition: 0.5s; }
-        .form-section { margin-bottom: 15px; }
-        label { font-size: 11px; font-weight: 700; color: var(--green); display: block; margin-bottom: 5px; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #DDD; border-radius: 6px; margin-bottom: 10px; font-family: inherit; }
-        .btn-save { background: var(--green); color: white; border: none; padding: 15px; border-radius: 6px; width: 100%; font-weight: 700; cursor: pointer; }
-        .log-card { background: white; border: 1px solid #DDD; border-left: 5px solid var(--green); padding: 15px; margin-bottom: 10px; position: relative; border-radius: 8px; }
-        .del { position: absolute; top: 10px; right: 10px; background: #FF4D4D; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
-        .chart-h { height: 200px; margin-bottom: 20px; }
+        
+        label { font-size: 11px; font-weight: 700; color: var(--green); display: block; margin-top: 12px; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #DDD; border-radius: 6px; margin-top: 4px; font-size: 16px; }
+        
+        .btn-save { background: var(--green); color: white; border: none; padding: 16px; border-radius: 6px; width: 100%; font-weight: 800; margin-top: 20px; cursor: pointer; }
+        .log-card { background: white; border: 1px solid #DDD; border-left: 5px solid var(--green); padding: 12px; margin-bottom: 10px; border-radius: 8px; position: relative; }
+        .del { position: absolute; top: 10px; right: 10px; background: #FF4D4D; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; }
+        .chart-h { height: 250px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>&#128095; Fitness Tracker</h1>
-    <div style="font-size: 0.8rem; opacity: 0.8;">Weekly Goal: 3,500 kcal</div>
-</header>
-
+<h1>&#128095; Fitness Tracker</h1>
 <div class="main-layout">
     <div class="panel entry">
-        <div class="form-section">
-            <label>ACTIVITY TYPE</label>
-            <select id="type">
-                <option value="Hybrid">Gym / Hybrid</option>
-                <option value="Running">Running</option>
-                <option value="Steps">Daily Steps / Work</option>
-                <option value="Strength">Strength Only</option>
-                <option value="Cardio">Other Cardio</option>
-            </select>
-            
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div><label>DATE</label><input type="date" id="date"></div>
-                <div><label>TOTAL MINS</label><input type="number" id="dur" placeholder="60"></div>
-            </div>
+        <label>ACTIVITY TYPE</label>
+        <select id="type">
+            <option value="Hybrid">Gym / Hybrid</option>
+            <option value="Running">Running</option>
+            <option value="Steps">Daily Steps / Work</option>
+            <option value="Strength">Strength Only</option>
+            <option value="Cardio">Other Cardio</option>
+        </select>
+        
+        <label>DATE</label>
+        <input type="date" id="date">
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div><label>CARDIO MINS</label><input type="number" id="c_min" placeholder="20"></div>
-                <div><label>WATCH BURN ??</label><input type="number" id="cals" placeholder="300"></div>
-            </div>
+        <label>TOTAL DURATION (MINS)</label>
+        <input type="number" id="dur" placeholder="e.g. 60">
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div><label>MILES ??</label><input type="number" step="0.1" id="dist" placeholder="0.0"></div>
-                <div><label>STEPS ??</label><input type="number" id="steps" placeholder="8000"></div>
-            </div>
+        <label>CARDIO PORTION (MINS)</label>
+        <input type="number" id="c_min" placeholder="e.g. 20">
 
-            <label>NOTES</label>
-            <textarea id="note" placeholder="BJJ, Bench, Route..."></textarea>
-            
-            <button class="btn-save" onclick="saveLog()">SAVE WORKOUT</button>
+        <label>WATCH BURN 🔥</label>
+        <input type="number" id="cals" placeholder="Burn from watch">
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label>MILES 📍</label><input type="number" step="0.01" id="dist" placeholder="0.0"></div>
+            <div><label>STEPS 👣</label><input type="number" id="steps" placeholder="8000"></div>
         </div>
+
+        <label>NOTES</label>
+        <textarea id="note" style="height: 50px;"></textarea>
+        
+        <button class="btn-save" onclick="saveLog()">SAVE WORKOUT</button>
     </div>
 
-    <div class="panel">
+    <div class="panel dash-panel">
         <div class="dashboard">
             <div class="stats">
                 <div class="box"><div class="num" id="w_str">0</div><div class="lab">Weekly Str Min</div></div>
                 <div class="box"><div class="num" id="w_car">0</div><div class="lab">Weekly Car Min</div></div>
-                <div class="box" style="grid-column: span 2;"><div class="num" id="w_cal">0</div><div class="lab">Weekly Deficit ??</div></div>
+                <div class="box" style="grid-column: span 2;"><div class="num" id="w_cal">0</div><div class="lab">Weekly Burn 🔥</div></div>
             </div>
-            <div style="font-size:12px; font-weight:700;">WEEKLY PROGRESS <span id="p_txt" style="float:right">0%</span></div>
+            <div style="font-size:12px; font-weight:700;">WEEKLY GOAL (3,500 kcal) <span id="p_txt" style="float:right">0%</span></div>
             <div class="bar-bg"><div class="bar-fill" id="p_bar"></div></div>
+            
             <div class="chart-h"><canvas id="ch1"></canvas></div>
             <div class="chart-h"><canvas id="ch2"></canvas></div>
         </div>
@@ -91,7 +97,10 @@
 <script>
     let logs = JSON.parse(localStorage.getItem('athlete_v2')) || [];
     let ch1 = null, ch2 = null;
-    document.getElementById('date').valueAsDate = new Date();
+    
+    // Auto-set today's date correctly
+    const todayStr = new Date().toLocaleDateString('sv-SE'); 
+    document.getElementById('date').value = todayStr;
 
     function saveLog() {
         const type = document.getElementById('type').value;
@@ -120,13 +129,20 @@
     function update() {
         const logDiv = document.getElementById('logs');
         let sS = 0, sC = 0, sCal = 0;
+        
+        // Accurate Weekly Logic (Monday Reset)
         const now = new Date();
-        const start = new Date(now.setDate(now.getDate() - now.getDay() + 1)).setHours(0,0,0,0);
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+        const mondayStr = monday.toLocaleDateString('sv-SE');
 
-        logs.sort((a,b) => new Date(b.date) - new Date(a.date));
+        logs.sort((a,b) => b.date.localeCompare(a.date));
         
         logs.forEach(l => {
-            if (new Date(l.date) >= start) { sS += l.str; sC += l.car; sCal += l.cal; }
+            // Compare string-to-string to avoid time zone drift
+            if (l.date >= mondayStr) {
+                sS += l.str; sC += l.car; sCal += l.cal;
+            }
         });
 
         document.getElementById('w_str').innerText = sS;
@@ -137,9 +153,9 @@
 
         logDiv.innerHTML = logs.map(l => `
             <div class="log-card">
-                <button class="del" onclick="delLog(${l.id})">X</button>
+                <button class="del" onclick="delLog(${l.id})">Del</button>
                 <strong>${l.date} - ${l.type}</strong><br>
-                ?? ${l.cal} kcal | ?? ${l.str}m | ?? ${l.car}m | ?? ${l.mi}mi
+                🔥 ${l.cal} kcal | 💪 ${l.str}m | 🚲 ${l.car}m | 📍 ${l.mi}mi
             </div>
         `).join('');
         
@@ -148,29 +164,22 @@
 
     function drawCharts() {
         const data = [...logs].reverse().slice(-7);
-        const labs = data.map(l => l.date.slice(5));
+        const labs = data.map(l => l.date.split('-').slice(1).join('/'));
 
-       if (ch1) ch1.destroy();
+        if (ch1) ch1.destroy();
         ch1 = new Chart(document.getElementById('ch1'), {
             type: 'bar',
             data: { labels: labs, datasets: [
                 { label: 'Str', data: data.map(l => l.str), backgroundColor: '#0056b3' },
                 { label: 'Car', data: data.map(l => l.car), backgroundColor: '#FFD700' }
             ]},
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                scales: { 
-                    x: { stacked: false }, // Changed to false
-                    y: { stacked: false }  // Changed to false
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: {stacked: false}, y: {stacked: false}}}
         });
 
         if (ch2) ch2.destroy();
         ch2 = new Chart(document.getElementById('ch2'), {
             type: 'line',
-            data: { labels: labs, datasets: [{ label: 'Miles', data: data.map(l => l.mi), borderColor: '#FF8C00', fill: true, backgroundColor: 'rgba(255,140,0,0.1)' }]},
+            data: { labels: labs, datasets: [{ label: 'Miles', data: data.map(l => l.mi), borderColor: '#FF8C00', fill: true, backgroundColor: 'rgba(255,140,0,0.1)', tension: 0.3 }]},
             options: { responsive: true, maintainAspectRatio: false }
         });
     }
